@@ -56,7 +56,7 @@ function handleKeyinfoInputChange({ target: _target }: Event) {
 }
 async function convert() {
   if (inputFile.value) {
-    logger.value.push(`[info]: start convert ${inputFileName}`);
+    logger.value.push(`[info]: start convert ${inputFileName.value}`);
     logger.value.push(
       `[info]: if you wan check more logs, please open console`
     );
