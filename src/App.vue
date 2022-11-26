@@ -120,8 +120,10 @@ async function handleConvert() {
       outputFileName.value
     );
     ffmpeg.FS("unlink", sourceVideoName.value);
-    ffmpeg.FS("unlink", "keyinfo");
-    ffmpeg.FS("unlink", keyFile.value?.name as string);
+    if (keyinfo.length) {
+      ffmpeg.FS("unlink", "keyinfo");
+      ffmpeg.FS("unlink", keyFile.value?.name as string);
+    }
     const zip = new JsZip();
     const dir = ffmpeg.FS("readdir", ".");
     let isFail = true;
