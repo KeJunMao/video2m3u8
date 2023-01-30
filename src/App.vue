@@ -2,26 +2,31 @@
 import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 import JsZip from "jszip";
 import { OnUpdateFileList } from "naive-ui/es/upload/src/interface";
+import { useI18n } from "vue-i18n";
+import { useLogger } from "./composables/useLogger";
 
-const logger = ref<string[]>([]);
+const { logger, info, error, success, log } = useLogger();
 const loading = ref(false);
+const { t } = useI18n();
 
-logger.value.push("[info]: create ffmpeg");
+success(t("logger.message.create"));
 const ffmpeg = createFFmpeg({
   log: true,
-  logger: (log) => {
-    console.log(log);
-    logger.value.push(`[${log.type}] - ${log.message}`);
+  logger: (l) => {
+    console.log(l);
+    log(t(`logger.${l.type}`), l.message);
   },
   progress: (p) => {
     console.log(p);
-    logger.value.push(`[progress] - ${p.ratio * 100}%`);
+    success(`${p.ratio * 100}%`);
   },
 });
 onMounted(async () => {
-  logger.value.push("[info]: load ffmpeg core, please wait...");
+  loading.value = true;
+  info(t("logger.message.loading"))
   await ffmpeg.load();
-  logger.value.push("[success]: ffmpeg core is loaded!");
+  success(t("logger.message.loaded"))
+  loading.value = false;
 });
 
 const sourceVideoFile = ref<File>();
@@ -56,11 +61,11 @@ const onKeyFileUpdate: OnUpdateFileList = (list) => {
 
 const tryCreateKeyInfoFile = () => {
   if (!keyURI.value) {
-    logger.value.push("[info] - key URI is empty, ignore encrypt");
+    info(t('logger.message.keyUrlEmpty'))
     return;
   }
   if (!keyFile.value) {
-    logger.value.push("[info] - key File is empty, ignore encrypt");
+    info(t('logger.message.keyFileEmpty'))
     return;
   }
   return new File(
@@ -83,10 +88,10 @@ function downloadFile(data: any, name: string) {
 async function handleConvert() {
   loading.value = true;
   if (sourceVideoFile.value) {
-    logger.value.push(`[info]: start convert ${sourceVideoName.value}`);
-    logger.value.push(
-      `[info]: if you wan check more logs, please open console`
-    );
+    info(t('logger.message.start', {
+      name: sourceVideoName.value
+    }))
+    info(t('logger.message.logTips'))
     ffmpeg.FS(
       "writeFile",
       sourceVideoName.value,
@@ -137,13 +142,13 @@ async function handleConvert() {
       }
     }
     if (isFail) {
-      logger.value.push("[error]: please open console to check detail logs");
+      error(t('logger.message.fail'))
       return;
     }
     const data = await zip.generateAsync({ type: "blob" });
     downloadFile(data, outputFileNameWithoutExt.value + ".zip");
   } else {
-    logger.value.push(`[error]: please select video file`);
+    error(t('logger.message.videoEmpty'))
   }
   loading.value = false;
 }
@@ -152,7 +157,7 @@ async function handleConvert() {
   <n-layout>
     <n-layout-header>
       <n-page-header p-4>
-        <template #title> Video to M3U8 </template>
+        <template #title> {{ $t("site.title") }} </template>
         <template #avatar>
           <n-icon i-carbon:document-video text-2xl />
         </template>
@@ -162,7 +167,7 @@ async function handleConvert() {
       <n-spin :show="loading">
         <div container m-auto>
           <div>
-            <h2>Video File <span color-red>*</span></h2>
+            <h2>{{ $t("form.video.label") }} <span color-red>*</span></h2>
             <n-upload
               directory-dnd
               accept="video/*"
@@ -173,27 +178,32 @@ async function handleConvert() {
                 <div mb-1>
                   <n-icon size="48" :depth="3" i-carbon:video> </n-icon>
                 </div>
-                <n-text> Click or drag the file to this area to upload </n-text>
+                <n-text> {{ $t("form.video.placeholder") }} </n-text>
               </n-upload-dragger>
             </n-upload>
           </div>
           <div>
-            <h2>Encryption (optional)</h2>
+            <h2>{{ $t("form.encryption.label") }}</h2>
             <n-grid :cols="2" x-gap="24">
               <n-gi>
-                <h3>Key URI <span color-red>*</span></h3>
+                <h3>
+                  {{ $t("form.encryption.keyUrl.label") }}
+                  <span color-red>*</span>
+                </h3>
                 <n-input
                   v-model:value="keyURI"
                   type="text"
-                  placeholder="Key URI"
+                  :placeholder="$t('form.encryption.keyUrl.placeholder')"
                 />
               </n-gi>
               <n-gi>
-                <h3>IV</h3>
+                <h3>{{ $t("form.encryption.iv.label") }}</h3>
                 <n-input v-model:value="keyIV" type="text" placeholder="IV" />
               </n-gi>
             </n-grid>
-            <h3>Key File <span color-red>*</span></h3>
+            <h3>
+              {{ $t("form.encryption.keyFile.label") }} <span color-red>*</span>
+            </h3>
             <n-upload
               directory-dnd
               :max="1"
@@ -213,14 +223,14 @@ async function handleConvert() {
             block
             my-8
           >
-            Convert And Download
+            {{ $t("form.convert.text") }}
           </n-button>
           <n-code :code="logger.join('\n')"></n-code>
         </div>
       </n-spin>
     </n-layout-content>
     <n-layout-footer>
-      <div text-center p2>Video to M3U8 · Made by KeJun</div>
+      <div text-center p2>Video to M3U8 · Made by <a href="https://github.com/KeJunMao">KeJun</a></div>
     </n-layout-footer>
   </n-layout>
 </template>

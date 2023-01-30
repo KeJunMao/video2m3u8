@@ -1,0 +1,44 @@
+{
+  "site": {
+    "title": "视频转M3U8"
+  },
+  "form": {
+    "video": {
+      "label": "视频文件",
+      "placeholder": "点击或拖拽文件到此处"
+    },
+    "encryption": {
+      "label": "加密(可选)",
+      "keyUrl": {
+        "label": "密钥 URL",
+        "placeholder": "密钥 URI"
+      },
+      "iv": {
+        "label": "IV",
+        "placeholder": "IV"
+      },
+      "keyFile": {
+        "label": "密钥文件"
+      }
+    },
+    "convert": {
+      "text": "转换并下载"
+    }
+  },
+  "logger": {
+    "message": {
+      "loading": "加载ffmpeg核心，请稍等...",
+      "create": "创建 ffmpeg",
+      "fail": "请打开控制台查看详细日志",
+      "keyFileEmpty": "密钥文件为空，忽略加密",
+      "keyUrlEmpty": "密钥 URI 为空，忽略加密",
+      "loaded": "ffmpeg 核心已加载！",
+      "logTips": "如果您想查看更多日志，请打开控制台",
+      "start": "开始转换{name}",
+      "videoEmpty": "请选择视频文件"
+    },
+    "error": "错误",
+    "info": "信息",
+    "success": "成功"
+  }
+}

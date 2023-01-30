@@ -1,0 +1,44 @@
+{
+  "site": {
+    "title": "Video to M3U8"
+  },
+  "form": {
+    "video": {
+      "label": "Video File",
+      "placeholder": "Click or drag the file to this area to upload"
+    },
+    "encryption": {
+      "label": "Encryption (optional)",
+      "keyUrl": {
+        "label": "Key URL",
+        "placeholder": "Key URI"
+      },
+      "iv": {
+        "label": "IV",
+        "placeholder": "IV"
+      },
+      "keyFile": {
+        "label": "Key File"
+      }
+    },
+    "convert": {
+      "text": "Convert And Download"
+    }
+  },
+  "logger": {
+    "info": "info",
+    "success": "success",
+    "error": "error",
+    "message": {
+      "create": "create ffmpeg",
+      "loading": "load ffmpeg core, please wait...",
+      "loaded": "ffmpeg core is loaded!",
+      "keyUrlEmpty": "key URI is empty, ignore encrypt",
+      "keyFileEmpty": "key File is empty, ignore encrypt",
+      "start": "start convert {name}",
+      "logTips": "if you wan check more logs, please open console",
+      "videoEmpty": "please select video file",
+      "fail": "please open console to check detail logs"
+    }
+  }
+}
