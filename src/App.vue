@@ -23,9 +23,9 @@ const ffmpeg = createFFmpeg({
 });
 onMounted(async () => {
   loading.value = true;
-  info(t("logger.message.loading"))
+  info(t("logger.message.loading"));
   await ffmpeg.load();
-  success(t("logger.message.loaded"))
+  success(t("logger.message.loaded"));
   loading.value = false;
 });
 
@@ -44,11 +44,14 @@ const outputFileNameWithoutExt = computed(() => {
   return name.join(".");
 });
 
-const outputTsNameTemplate = computed(() => {
-  return encodeURIComponent(outputFileNameWithoutExt.value) + "-%d.ts";
+const outputTsNameTemplate = computed(() => {  
+  // return `${btoa(encodeURIComponent(outputFileNameWithoutExt.value))}-%d.ts`
+  // return `${outputFileNameWithoutExt.value}-%d.ts`
+  return "video-%d.ts"
 });
 const outputFileName = computed(() => {
-  return outputFileNameWithoutExt.value + ".m3u8";
+  // return outputFileNameWithoutExt.value + ".m3u8";
+  return '1.m3u8'
 });
 
 const onVideoFileUpdate: OnUpdateFileList = (list) => {
@@ -61,11 +64,11 @@ const onKeyFileUpdate: OnUpdateFileList = (list) => {
 
 const tryCreateKeyInfoFile = () => {
   if (!keyURI.value) {
-    info(t('logger.message.keyUrlEmpty'))
+    info(t("logger.message.keyUrlEmpty"));
     return;
   }
   if (!keyFile.value) {
-    info(t('logger.message.keyFileEmpty'))
+    info(t("logger.message.keyFileEmpty"));
     return;
   }
   return new File(
@@ -88,10 +91,12 @@ function downloadFile(data: any, name: string) {
 async function handleConvert() {
   loading.value = true;
   if (sourceVideoFile.value) {
-    info(t('logger.message.start', {
-      name: sourceVideoName.value
-    }))
-    info(t('logger.message.logTips'))
+    info(
+      t("logger.message.start", {
+        name: sourceVideoName.value,
+      })
+    );
+    info(t("logger.message.logTips"));
     ffmpeg.FS(
       "writeFile",
       sourceVideoName.value,
@@ -142,13 +147,13 @@ async function handleConvert() {
       }
     }
     if (isFail) {
-      error(t('logger.message.fail'))
+      error(t("logger.message.fail"));
       return;
     }
     const data = await zip.generateAsync({ type: "blob" });
     downloadFile(data, outputFileNameWithoutExt.value + ".zip");
   } else {
-    error(t('logger.message.videoEmpty'))
+    error(t("logger.message.videoEmpty"));
   }
   loading.value = false;
 }
@@ -164,8 +169,8 @@ async function handleConvert() {
       </n-page-header>
     </n-layout-header>
     <n-layout-content content-style="padding: 24px;">
-      <n-spin :show="loading">
-        <div container m-auto>
+      <div container m-auto>
+        <n-spin :show="loading">
           <div>
             <h2>{{ $t("form.video.label") }} <span color-red>*</span></h2>
             <n-upload
@@ -225,12 +230,14 @@ async function handleConvert() {
           >
             {{ $t("form.convert.text") }}
           </n-button>
-          <n-code :code="logger.join('\n')"></n-code>
-        </div>
-      </n-spin>
+        </n-spin>
+        <n-code :code="logger.join('\n')"></n-code>
+      </div>
     </n-layout-content>
     <n-layout-footer>
-      <div text-center p2>Video to M3U8 · Made by <a href="https://github.com/KeJunMao">KeJun</a></div>
+      <div text-center p2>
+        Video to M3U8 · Made by <a href="https://github.com/KeJunMao">KeJun</a>
+      </div>
     </n-layout-footer>
   </n-layout>
 </template>

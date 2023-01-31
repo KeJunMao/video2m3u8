@@ -7,7 +7,6 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
-    Logger: typeof import('./components/Logger.vue')['default']
     NButton: typeof import('naive-ui')['NButton']
     NCode: typeof import('naive-ui')['NCode']
     NGi: typeof import('naive-ui')['NGi']
