@@ -1,30 +1,38 @@
 <script lang="ts" setup>
-import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
+import { FFmpeg } from '@ffmpeg/ffmpeg'
 import JsZip from "jszip";
 import { OnUpdateFileList } from "naive-ui/es/upload/src/interface";
 import { useI18n } from "vue-i18n";
 import { useLogger } from "./composables/useLogger";
+import type { LogEvent, ProgressEvent } from '@ffmpeg/ffmpeg/dist/esm/types';
+import { fetchFile, toBlobURL } from '@ffmpeg/util'
 
 const { logger, info, error, success, log } = useLogger();
 const loading = ref(false);
 const { t } = useI18n();
+const baseURL = 'https://unpkg.zhimg.com/@ffmpeg/core-mt@0.12.4/dist/esm'
 
 success(t("logger.message.create"));
-const ffmpeg = createFFmpeg({
-  log: true,
-  logger: (l) => {
-    console.log(l);
-    log(t(`logger.${l.type}`), l.message);
-  },
-  progress: (p) => {
-    console.log(p);
-    success(`${p.ratio * 100}%`);
-  },
-});
+const ffmpeg = new FFmpeg();
+
+ffmpeg.on('log', (l: LogEvent) => {
+  console.log(l);
+  log(t(`logger.${l.type}`), l.message);
+})
+
+ffmpeg.on('progress', (p: ProgressEvent) => {
+  console.log(p);
+  success(`${p.progress * 100}%`);
+})
+
 onMounted(async () => {
   loading.value = true;
   info(t("logger.message.loading"));
-  await ffmpeg.load();
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript')
+  })
   success(t("logger.message.loaded"));
   loading.value = false;
 });
@@ -44,7 +52,7 @@ const outputFileNameWithoutExt = computed(() => {
   return name.join(".");
 });
 
-const outputTsNameTemplate = computed(() => {  
+const outputTsNameTemplate = computed(() => {
   // return `${btoa(encodeURIComponent(outputFileNameWithoutExt.value))}-%d.ts`
   // return `${outputFileNameWithoutExt.value}-%d.ts`
   return "video-%d.ts"
@@ -97,8 +105,7 @@ async function handleConvert() {
       })
     );
     info(t("logger.message.logTips"));
-    ffmpeg.FS(
-      "writeFile",
+    await ffmpeg.writeFile(
       sourceVideoName.value,
       await fetchFile(sourceVideoFile.value)
     );
@@ -106,44 +113,45 @@ async function handleConvert() {
     const keyinfoFile = tryCreateKeyInfoFile();
 
     if (keyinfoFile && keyFile.value) {
-      ffmpeg.FS(
-        "writeFile",
+      await ffmpeg.writeFile(
         keyFile.value.name,
         await fetchFile(keyFile.value)
       );
-      ffmpeg.FS("writeFile", "keyinfo", await fetchFile(keyinfoFile));
+      await ffmpeg.writeFile("keyinfo", await fetchFile(keyinfoFile));
       keyinfo = ["-hls_key_info_file", "keyinfo"];
     }
-    await ffmpeg.run(
-      "-i",
-      sourceVideoName.value,
-      "-y",
-      "-c",
-      "copy",
-      "-hls_time",
-      "10",
-      "-hls_playlist_type",
-      "vod",
-      ...keyinfo,
-      "-hls_segment_filename",
-      outputTsNameTemplate.value,
-      outputFileName.value
+    await ffmpeg.exec(
+      [
+        "-i",
+        sourceVideoName.value,
+        "-y",
+        "-c",
+        "copy",
+        "-hls_time",
+        "10",
+        "-hls_playlist_type",
+        "vod",
+        ...keyinfo,
+        "-hls_segment_filename",
+        outputTsNameTemplate.value,
+        outputFileName.value
+      ]
     );
-    ffmpeg.FS("unlink", sourceVideoName.value);
+    await ffmpeg.deleteFile(sourceVideoName.value);
     if (keyinfo.length) {
-      ffmpeg.FS("unlink", "keyinfo");
-      ffmpeg.FS("unlink", keyFile.value?.name as string);
+      await ffmpeg.deleteFile("keyinfo");
+      await ffmpeg.deleteFile(keyFile.value?.name as string);
     }
     const zip = new JsZip();
-    const dir = ffmpeg.FS("readdir", ".");
+    const dir = await ffmpeg.listDir(".");
     let isFail = true;
 
     for (let file of dir) {
-      if (file.endsWith(".ts") || file.endsWith(".m3u8")) {
+      if (file.name.endsWith(".ts") || file.name.endsWith(".m3u8")) {
         isFail = false;
-        const data = ffmpeg.FS("readFile", file);
-        zip.file(file, data);
-        ffmpeg.FS("unlink", file);
+        const data = ffmpeg.readFile(file.name);
+        zip.file(file.name, data);
+        ffmpeg.deleteFile(file.name);
       }
     }
     if (isFail) {
@@ -173,12 +181,7 @@ async function handleConvert() {
         <n-spin :show="loading">
           <div>
             <h2>{{ $t("form.video.label") }} <span color-red>*</span></h2>
-            <n-upload
-              directory-dnd
-              accept="video/*"
-              :max="1"
-              :on-update:file-list="onVideoFileUpdate"
-            >
+            <n-upload directory-dnd accept="video/*" :max="1" :on-update:file-list="onVideoFileUpdate">
               <n-upload-dragger>
                 <div mb-1>
                   <n-icon size="48" :depth="3" i-carbon:video> </n-icon>
@@ -195,11 +198,7 @@ async function handleConvert() {
                   {{ $t("form.encryption.keyUrl.label") }}
                   <span color-red>*</span>
                 </h3>
-                <n-input
-                  v-model:value="keyURI"
-                  type="text"
-                  :placeholder="$t('form.encryption.keyUrl.placeholder')"
-                />
+                <n-input v-model:value="keyURI" type="text" :placeholder="$t('form.encryption.keyUrl.placeholder')" />
               </n-gi>
               <n-gi>
                 <h3>{{ $t("form.encryption.iv.label") }}</h3>
@@ -209,11 +208,7 @@ async function handleConvert() {
             <h3>
               {{ $t("form.encryption.keyFile.label") }} <span color-red>*</span>
             </h3>
-            <n-upload
-              directory-dnd
-              :max="1"
-              :on-update:file-list="onKeyFileUpdate"
-            >
+            <n-upload directory-dnd :max="1" :on-update:file-list="onKeyFileUpdate">
               <n-upload-dragger>
                 <div mb-1>
                   <n-icon size="48" :depth="3" i-carbon:encryption> </n-icon>
@@ -221,17 +216,12 @@ async function handleConvert() {
               </n-upload-dragger>
             </n-upload>
           </div>
-          <n-button
-            @click="handleConvert"
-            size="large"
-            type="primary"
-            block
-            my-8
-          >
+          <n-button @click="handleConvert" size="large" type="primary" block my-8>
             {{ $t("form.convert.text") }}
           </n-button>
         </n-spin>
-        <n-code :code="logger.join('\n')"></n-code>
+        <!-- <n-code :code="logger.join('\n')"></n-code> -->
+        <pre>{{ logger.join("\n") }}</pre>
       </div>
     </n-layout-content>
     <n-layout-footer>

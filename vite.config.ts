@@ -1,4 +1,5 @@
-import path from "path";
+import { fileURLToPath, URL } from 'url'
+
 import { defineConfig } from "vite";
 import Vue from "@vitejs/plugin-vue";
 import Components from "unplugin-vue-components/vite";
@@ -9,14 +10,13 @@ import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 export default defineConfig({
   resolve: {
     alias: {
-      "~/": `${path.resolve(__dirname, "src")}/`,
-    },
+      '@/': fileURLToPath(new URL('./src', import.meta.url)),
+      '~/': fileURLToPath(new URL('./src', import.meta.url))
+    }
   },
 
   plugins: [
-    Vue({
-      reactivityTransform: true,
-    }),
+    Vue(),
 
     // https://github.com/antfu/unplugin-auto-import
     AutoImport({
@@ -37,10 +37,13 @@ export default defineConfig({
     Unocss(),
   ],
 
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
+  },
   server: {
     headers: {
-      "Cross-Origin-Embedder-Policy": "require-corp",
-      "Cross-Origin-Opener-Policy": "same-origin",
-    },
-  },
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
+    }
+  }
 });
